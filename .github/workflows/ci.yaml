@@ -1,0 +1,41 @@
+﻿name: "CI"
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup C# environment
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dependencies
+        run: |
+          dotnet tool install -g dotnet-coverage
+          dotnet restore alipan/alipan.csproj
+          dotnet restore alipan.Tests/alipan.Tests.csproj
+
+
+      - name: Coverage # out put to report.xml
+        run: |
+          cd alipan.Tests
+          dotnet test --collect "Code Coverage;Format=cobertura"
+          dotnet-coverage merge -o merged.cobertura.xml -f cobertura TestResults/**/*.cobertura.xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          file: alipan.Tests/merged.cobertura.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
